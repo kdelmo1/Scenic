@@ -140,9 +140,8 @@ class PurePursuitLateralController:
         max_ld: maximum lookahead distance (metres)
     """
 
-    # changed clwbr from 0.72 to 0.55
-    def __init__(self, cl, ld=7.0, dt=0.1, clwbr=0.55,
-                 K_dd=0.5, min_ld=3.0, max_ld=15.0, alpha=0.1, max_steering_deg=40.0):
+    def __init__(self, cl, ld=7.0, dt=0.1, clwbr=0.72,
+                 K_dd=0.5, min_ld=3.0, max_ld=15.0):
         self.dt     = dt
         self.wb     = cl * clwbr          # wheelbase
         self.clwbr  = clwbr
@@ -151,9 +150,8 @@ class PurePursuitLateralController:
         self.min_ld = min_ld
         self.max_ld = max_ld
         self.past_cte = 0.0
-        # self.max_steering_angle = np.radians(35)
-        self.max_steering_angle = np.radians(max_steering_deg)
-        self.alpha = alpha # adding this as a tunable parameter
+        # Maximum steering angle (radians) — used for normalisation
+        self.max_steering_angle = np.radians(35)
 
     # ------------------------------------------------------------------
     # helpers
@@ -210,14 +208,9 @@ class PurePursuitLateralController:
         """
 
         # ── 1. Update lookahead distance from speed ────────────────────────
-        # if speed is not None:
-        #     self.ld = float(np.clip(self.K_dd * speed, self.min_ld, self.max_ld))
-        
-        # adding low pass filter
         if speed is not None:
-            target_ld = float(np.clip(self.K_dd * speed, self.min_ld, self.max_ld))
-            self.ld = self.alpha * target_ld + (1.0 - self.alpha) * self.ld
-            
+            self.ld = float(np.clip(self.K_dd * speed, self.min_ld, self.max_ld))
+
         # ── 2. Project ego onto trajectory, collect coords ─────────────────
         line = input_trajectory.lineString
 

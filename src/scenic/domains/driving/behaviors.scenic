@@ -199,8 +199,9 @@ behavior FollowTrajectoryBehavior(lon_controller = None, lat_controller = None, 
             validTrajectory = self.lane.centerline
 
         past_steer_angle = current_steer_angle
-        current_steer_angle = lat_controller.run_step(validTrajectory, self, is_oppositeTraffic)
-        
+        # current_steer_angle = lat_controller.run_step(validTrajectory, self, is_oppositeTraffic) # comment this out for new version
+        current_steer_angle = lat_controller.run_step(trajectory_centerline, self, is_oppositeTraffic, speed=current_speed) # comment this out for og version
+         
 
         take RegulatedControlAction(throttle, current_steer_angle, past_steer_angle)
         past_steer_angle = current_steer_angle
@@ -243,7 +244,7 @@ def checkTrajectoryValidity(position, trajectory):
 
 
 
-
+# not using pure pursuit?
 behavior TurnBehavior(trajectory, target_speed=6):
     """
     This behavior uses a controller specifically tuned for turning at an intersection.
@@ -257,7 +258,8 @@ behavior TurnBehavior(trajectory, target_speed=6):
         trajectory_centerline = concatenateCenterlines([traj.centerline for traj in trajectory])
 
     # instantiate longitudinal and lateral controllers
-    lon_controller, lat_controller = simulation().getTurningControllers(self)
+    # lon_controller, lat_controller = simulation().getTurningControllers(self)
+    lon_controller, lat_controller = simulation().getPurePursuitControllers(self)
 
     past_steer_angle = 0
 
@@ -267,14 +269,15 @@ behavior TurnBehavior(trajectory, target_speed=6):
         else:
             current_speed = 0
 
-        cte = trajectory_centerline.signedDistanceTo(self.position)
+        # cte = trajectory_centerline.signedDistanceTo(self.position)
         speed_error = target_speed - current_speed
 
         # compute throttle : Longitudinal Control
         throttle = lon_controller.run_step(speed_error)
 
         # compute steering : Latitudinal Control
-        current_steer_angle = lat_controller.run_step(ego, False)
+        # current_steer_angle = lat_controller.run_step(trajectory_centerline, ego, False) # comment this out for new version
+        current_steer_angle = lat_controller.run_step(trajectory_centerline, self, False, speed=current_speed) # comment this out for og version
 
         take RegulatedControlAction(throttle, current_steer_angle, past_steer_angle)
         past_steer_angle = current_steer_angle
@@ -413,7 +416,7 @@ behavior FollowPolylineBehavior(polyline, target_speed=10, lon_controller=None, 
         throttle = lon_controller.run_step(speed_error)
 
         if checkTrajectoryValidity(self.position, polyline):
-            current_steer_angle = lat_controller.run_step(polyline, self, False)
+            current_steer_angle = lat_controller.run_step(polyline, self, False, speed=current_speed)
         else:
             current_steer_angle = past_steer_angle
 
@@ -517,7 +520,7 @@ behavior FollowStraightestPathBehavior(target_speed=10, lon_controller=None, lat
             validTrajectory = self.lane.centerline
 
         past_steer_angle = current_steer_angle
-        current_steer_angle = lat_controller.run_step(validTrajectory, self, False)
+        current_steer_angle = lat_controller.run_step(validTrajectory, self, False, speed=current_speed)
 
         take RegulatedControlAction(throttle, current_steer_angle, past_steer_angle)
         past_steer_angle = current_steer_angle

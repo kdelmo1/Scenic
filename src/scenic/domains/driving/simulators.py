@@ -7,6 +7,8 @@ from scenic.domains.driving.controllers import (
     PurePursuitLateralController,
 )
 
+import scenic.syntax.veneer as veneer
+
 
 class DrivingSimulator(Simulator):
     """A `Simulator` supporting the driving domain."""
@@ -45,14 +47,32 @@ class DrivingSimulation(Simulation):
             lat_controller = PIDLateralController(K_P=0.2, K_D=0.1, K_I=0.0, dt=dt)
         return lon_controller, lat_controller
 
-    def getPurePursuitControllers(self, agent, cl=4.5, ld=7, clwbr=0.65):
-        dt = self.timestep
+    # def getPurePursuitControllers(self, agent, cl=4.5, ld=7, clwbr=0.72):
+    #     dt = self.timestep
 
+    #     lon_controller = PIDLongitudinalController(K_P=0.5, K_D=0.1, K_I=0.7, dt=dt)
+    #     lat_controller = PurePursuitLateralController(
+    #         cl=agent.length, ld=7, dt=dt, clwbr=0.72
+    #     )
+
+    #     return lon_controller, lat_controller
+    
+    # changed clwbr to 0.55 as per the metadrive print out
+    def getPurePursuitControllers(self, agent, cl=4.5, ld=7, clwbr=0.55):
+        dt = self.timestep
+        # K_dd = veneer.globalParameters.get('lookahead_gain', 0.5)
+        K_dd = getattr(veneer.globalParameters, 'lookahead_gain', 0.5)
+        alpha = getattr(veneer.globalParameters, 'alpha', 0.1)
+        max_steering_deg = getattr(veneer.globalParameters, 'max_steering_deg', 40.0)
+        
+        print(f"[DEBUG getPurePursuitControllers] K_dd={K_dd} alpha={alpha} max_steering_deg={max_steering_deg}")
+        
         lon_controller = PIDLongitudinalController(K_P=0.5, K_D=0.1, K_I=0.7, dt=dt)
         lat_controller = PurePursuitLateralController(
-            cl=agent.length, ld=7, dt=dt, clwbr=0.65
+            cl=agent.length, ld=ld, dt=dt, clwbr=clwbr, K_dd=K_dd, alpha=alpha, max_steering_deg=max_steering_deg
         )
-
+        
+        
         return lon_controller, lat_controller
 
     def getTurningControllers(self, agent):
